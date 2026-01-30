@@ -10,12 +10,12 @@ def verify_password(stored_hash, password):
 def login(username, password):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT password_hash FROM users WHERE username = ?', (username,))
+    c.execute('SELECT id, role, password_hash FROM users WHERE username = ?', (username,))
     row = c.fetchone()
     conn.close()
-    if row and verify_password(row[0], password):
-        return True
-    return False
+    if row and verify_password(row[2], password):
+        return (row[0], row[1])
+    return None
 def get_matches_by_season(season_id):
     conn = get_db_connection()
     c = conn.cursor()
@@ -60,9 +60,9 @@ def add_match_results(match_id, h_score, a_score, scorers_list):
         c.execute('''UPDATE matches
                      SET home_score = ?, away_score = ?
                      WHERE id = ?''', (h_score, a_score, match_id))
-        for plauter_id, minute in scorers_list:
+        for player_id, minute in scorers_list:
             c.execute('''INSERT INTO match_events (match_id, player_id, event_type, minute)
-                         VALUES (?, ?, 'goal', ?)''', (match_id, plauter_id, minute))
+                         VALUES (?, ?, 'goal', ?)''', (match_id, player_id, minute))
         conn.commit()
         print("Wynik i strzelcy dodani pomyslnie")
     except Exception as e:
